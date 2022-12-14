@@ -134,7 +134,7 @@ class Player {
 }
 
 class FlightChess {
-  static COLORS = ["red", "green", "yellow", "blue"];
+  static COLORS = ["red",  "yellow", "blue",  "green"];
   static OFFSET = [0, 13, 13 * 2, 13 * 3];
   static CHESS_STATUS = {
     HOME: 0,

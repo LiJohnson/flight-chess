@@ -7,48 +7,72 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>飞行棋|Flight Chess</title>
     <script src="main.js"></script>
+    <link href="main.css" rel="stylesheet" />
+    <link rel="stylesheet/less" type="text/css" href="main.less" />
+    <script src="https://cdn.jsdelivr.net/gh/less/less.js@v4.1.3/dist/less.min.js"></script>
     <script>
 
         HTMLElement.prototype.on = function (events, selector, cb) { let bindEle = this; if (!cb) { cb = selector; selector = false; } events.split(' ').forEach(eventType => { this.addEventListener(eventType, function (e) { if (selector) { bindEle.querySelectorAll(selector).forEach(item => { e.path.forEach(targetItem => { targetItem === item && cb.call(item, e); }) }) } else { cb.call(this, e) } }) }); return this };
         const $ = s => document.querySelector(s)
-        
+        const initMapHtml = ()=>{
+            const gameEl = $("#game")
+            const mapEl = $("#map")
+            let html = FlightChess.COLORS.map(color=>`<div class="home ${color}">${new Array(4).fill(null).map(a=>"<span class=chess-cell></span>").join("")} <span class="chess-cell startup triangle"></div>`)
+
+            for(let i = 1 ; i <= 52 ; i++){
+                let triangle = [1,4,5,8].some(j=>j===i%13)?'triangle':''
+                let color = FlightChess.COLORS[(i+2)%4];
+                let positionClass = FlightChess.COLORS.map( (c,index)=>`position-${c}-${(i + ((index*-1+4)*13))%52||52}` ).join(" ")
+                html.push(`<span class="chess-cell chess-cell-g-${i} chess-cell-${i%13} ${triangle} ${color} ${positionClass}"></span>`)
+            }
+            FlightChess.COLORS.map(color=>{
+                for(let i = 0 ; i < 6 ; i++){
+                let positionClass = FlightChess.COLORS.map( (c,index)=>`position-${c}-${(i + ((index*-1+4)*13))%52||52}` ).join(" ")
+                html.push(`<span class="chess-cell land-line  ${i==5?'triangle':''} ${color} position-${color}-${51+i} chess-cell-${color}-${51+i}"></span>`)
+            }
+            })
+            
+            mapEl.innerHTML = html.join("")
+
+        }
         const main = () => {
+            initMapHtml()
             console.log($("input[type=number]"))
             let flightChess = null
-            let printInfo = fc =>{
-                if(!fc)return
+            let printInfo = fc => {
+                if (!fc) return
                 let html = [`<div>action:${fc.round.action}</div>`];
-                fc.players.forEach(p=>{
+                fc.players.forEach(p => {
                     html.push(`<div ><span>${p.color}</span>`);
-                    html.push(['A','B','C','D'].map(a=>{
-                        let c = p['chess'+a]
-                        return `<button class=btn-chess data-color=${p.color} data-chess=${a} >${a} / ${c.position },${c.getGlobalPosition()},${c.state}</button>`
+                    html.push(['A', 'B', 'C', 'D'].map(a => {
+                        let c = p['chess' + a]
+                        return `<button class=btn-chess data-color=${p.color} data-chess=${a} >${a} / ${c.position},${c.getGlobalPosition()},${c.state}</button>`
                     }).join(''))
                     html.push(`</div>`)
                 })
                 $("#print-info").innerHTML = html.join('')
                 $("#step").innerHTML = fc.round.step || ""
             }
-            $("#print-info").on('click','.btn-chess',e=>{
+            $("#print-info").on('click', '.btn-chess', e => {
                 let color = e.target.dataset.color
                 let chessNo = e.target.dataset.chess
-                
-                let player = flightChess.players.find(p=>p.color === color)
+
+                let player = flightChess.players.find(p => p.color === color)
                 let chess = player[`chess${chessNo}`]
-                console.log(color,chessNo,player,chess)
-                
+                console.log(color, chessNo, player, chess)
+
                 flightChess.selectChess(chess)
-                
+
             })
             $("button").on("click", e => {
-                flightChess = new FlightChess($("input[type=number]").value*1)
+                flightChess = new FlightChess($("input[type=number]").value * 1)
                 flightChess.play()
             });
-            $("#dice").on("click",e=>{
+            $("#dice").on("click", e => {
                 flightChess.rollDice()
-                
+
             })
-            setInterval(()=>printInfo(flightChess),500)
+            setInterval(() => printInfo(flightChess), 500)
 
         }
         window.onload = main
@@ -60,7 +84,12 @@
     <button>start</button>
     <div id="print-info"></div>
     <button id="dice">dice</button><span id="step"></span>
-    <div id="game"></div>
+    <div id="game">
+        <div id="map">
+            <div class="home red"></div>
+            <div class="home red"></div>
+        </div>
+    </div>
 </body>
 
 </html>
