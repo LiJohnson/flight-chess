@@ -17,7 +17,14 @@
         const initMapHtml = () => {
             const gameEl = $("#game")
             const mapEl = $("#map")
-            let html = FlightChess.COLORS.map(color => `<div class="home ${color}">${new Array(4).fill(null).map(a => "<span class=chess-cell></span>").join("")} <span class="chess-cell startup triangle"></div>`)
+            let html = [];
+            //FlightChess.COLORS.map(color => `<div class="home ${color}">${} <span class="chess-cell startup triangle"></div>`)
+
+            FlightChess.COLORS.map(color => {
+                html.push(`<div class="home ${color}"></div>`)
+                html.push(["A", "B", "C", "D"].map(a => `<span class="chess-cell chess-cell-home chess-cell-home-${color}-${a}"></span>`).join(""))
+                html.push(`<span class="chess-cell chess-cell-airport chess-cell-airport-${color} triangle"></span>`)
+            })
 
             for (let i = 1; i <= 52; i++) {
                 let triangle = [1, 4, 5, 8].some(j => j === i % 13) ? 'triangle' : ''
@@ -41,10 +48,56 @@
                 html.push("</div>")
                 html.push("</div>")
             })
-
+            html.push('<span class="chess chess-red chess-red-A chess-cell-g-8"></span>')
             mapEl.innerHTML = html.join("")
-
         }
+
+        const updateGameMap = (fc) => {
+            const mapEl = $("#map")
+            fc.players.flatMap(p => p.listChess()).map(c => {
+                let css = [`chess chess-${c.color} chess-${c.color}-${c.id}`]
+                if (c.state === FlightChess.CHESS_STATUS.HOME) {
+                    css.push('chess-cell-home')
+                    css.push(`chess-cell-home-${c.color}-${c.id}`)
+                } else if (c.state === FlightChess.CHESS_STATUS.AIRPORT) {
+                    css.push(`chess-cell-airport chess-cell-airport-${c.color} triangle`)
+                } else if (c.state === FlightChess.CHESS_STATUS.FLIGHTING) {
+                    css.push(`chess-cell-g-${c.getGlobalPosition()}`)
+                    css.push([1, 4, 5, 8].some(j => j === c.getGlobalPosition() % 13) ? 'triangle' : '')
+                    if( c.position >=50 ){
+                        css.push("land-line")
+                    }
+                } else if (c.state === FlightChess.CHESS_STATUS.ENDED) {
+                    css.push('chess-cell-home')
+                    css.push(`chess-cell-home-${c.color}-${c.id}`)
+                    css.push(`ended`)
+                }
+                c.htmlEl.classList = css.join(" ")
+                c.htmlEl.style.margin = ""
+                c.htmlEl.style.zIndex = ""
+            })
+            fc.players.forEach(p => {
+                let list = []
+                p.listChess().filter(c => c.position >= 0).forEach(c => {
+                    let a = list.find(item => item[0] === c.position)
+                    if (!a) {
+                        a = [c.position, []]
+                        list.push(a)
+                    }
+                    a[1].push(c)
+                })
+
+                list.map(item => item[1]).filter(item => item.length > 1).forEach(item => {
+                    for (let i = 1; i < item.length; i++) {
+                        item[i].htmlEl.style.margin = `${i * 0.4}% 0 0 ${i * 0.4}%`
+                        item[i].htmlEl.style.zIndex = 1
+                    }
+                })
+
+
+            })
+        }
+
         const main = () => {
             initMapHtml()
             console.log($("input[type=number]"))
@@ -70,19 +123,36 @@
                 let player = flightChess.players.find(p => p.color === color)
                 let chess = player[`chess${chessNo}`]
                 console.log(color, chessNo, player, chess)
-
                 flightChess.selectChess(chess)
+            })
+            $("#map").on("click", ".chess", e => {
+                console.log(e, e.target.chess)
+                flightChess.selectChess(e.target.chess)
+                setTimeout(() => {
+                    updateGameMap(flightChess)
+                }, 300);
 
             })
+
             $("button").on("click", e => {
                 flightChess = new FlightChess($("input[type=number]").value * 1)
                 flightChess.play()
+                flightChess.players.forEach(p => {
+                    p.listChess().forEach(c => {
+                        c.htmlEl = document.createElement('span')
+                        c.htmlEl.chess = c
+                        $("#map").appendChild(c.htmlEl)
+
+                    })
+                })
+                window.fc = flightChess
+                updateGameMap(flightChess)
             });
             $("#dice").on("click", e => {
                 flightChess.rollDice()
-
             })
-            setInterval(() => printInfo(flightChess), 500)
+            setInterval(() => printInfo(flightChess), 1000)
+            //debug
 
         }
         window.onload = main
@@ -96,8 +166,6 @@
     <button id="dice">dice</button><span id="step"></span>
     <div id="game">
         <div id="map">
-            <div class="home red"></div>
-            <div class="home red"></div>
         </div>
     </div>
 </body>

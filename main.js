@@ -10,7 +10,10 @@ class Chess {
   state = FlightChess.CHESS_STATUS.HOME;
   moveTimes = 0;
   jumpTimes = 0;
-  constructor(color, offset) {
+  id;
+  htmlEl;
+  constructor(id,color, offset) {
+    this.id = id
     this.color = color;
     this.offset = offset;
     this.position = -1
@@ -105,18 +108,22 @@ class Player {
   constructor(index) {
     index = index || 0;
     this.chessA = new Chess(
+      'A',
       FlightChess.COLORS[index],
       FlightChess.OFFSET[index]
     );
     this.chessB = new Chess(
+      'B',
       FlightChess.COLORS[index],
       FlightChess.OFFSET[index]
     );
     this.chessC = new Chess(
+      'C',
       FlightChess.COLORS[index],
       FlightChess.OFFSET[index]
     );
     this.chessD = new Chess(
+      'D',
       FlightChess.COLORS[index],
       FlightChess.OFFSET[index]
     );
@@ -186,6 +193,7 @@ class FlightChess {
           let rollTimes = 1;
           for (let i = 0; i < rollTimes; i++) {
             this.round.action = `${p.color} to roll dice`
+
             let step = await new Promise(reslove => {
               this.round.rollDice = num => reslove(num)
             })
@@ -203,11 +211,11 @@ class FlightChess {
               continue
             }
             if (step === 6) { rollTimes++ }
-            if (rollTimes === 4) {
-              rollTimes = 0
-              p.listChess().filter(c => c.state === FlightChess.CHESS_STATUS.FLIGHTING).forEach(c => c.crash(c => this.addRecord(c)))
-              continue
-            }
+            // if (rollTimes === 4) {
+            //   rollTimes = 0
+            //   p.listChess().filter(c => c.state === FlightChess.CHESS_STATUS.FLIGHTING).forEach(c => c.crash(c => this.addRecord(c)))
+            //   continue
+            // }
             this.round.action = `to select ${p.color} chess , and move step ${step}`
             let chess = await new Promise(reslove => {
               this.round.selectChess = chess => reslove(chess)
@@ -228,9 +236,9 @@ class FlightChess {
     }
   }
   // s = [2, 6]
-  rollDice() {
+  rollDice(num) {
     assert(this.round && this.round.rollDice, "can not roll dice now")
-    let step = Math.floor(Math.random() * 6 + 1)
+    let step = num*1 || Math.floor(Math.random() * 6 + 1)
     // let step = this.s.pop()
     this.round.rollDice(step)
     return step
@@ -244,6 +252,9 @@ class FlightChess {
     }
 
     this.round.selectChess(chess)
+    return new Promise(ok=>{
+      this.round.selectedChess = ()=>ok()
+    })
   }
   checkAttak(chess, position) {
     if (position === FlightChess.CLASH_POSITION) {
